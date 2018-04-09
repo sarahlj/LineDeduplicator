@@ -1,5 +1,5 @@
 package main
-//auther: Sarah Jung
+//author: Sarah Jung
 
 import (
 	"bufio"
