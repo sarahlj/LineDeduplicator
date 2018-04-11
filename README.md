@@ -16,3 +16,5 @@ Note: Go 1.9+ is required because of sync.Map.
 * Super fast (when you come from Python or Javascript)
 * Producer-Consumer pattern used to implement concurrency
 
+Memory usage is always 4 bytes for every unique line in the file.
+
