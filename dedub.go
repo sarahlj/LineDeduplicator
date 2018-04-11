@@ -1,18 +1,23 @@
 package main
-//author: Sarah Jung
 
 import (
 	"bufio"
 	"flag"
+	"log"
+	"math"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	N "github.com/OneOfOne/xxhash"
 )
 
 var wg sync.WaitGroup
+
+var d = 0
+var u = 0
 
 // Create the threadsafe map.
 var sm sync.Map
@@ -54,12 +59,14 @@ func writer(results <-chan *Job, done chan<- bool, path string, savedub bool) {
 		if more {
 			if j.Duplicate == false {
 				_, _ = f.WriteString(j.Work + linebreak)
+				u++
 				continue
 			}
 			if j.Duplicate == true {
 				if savedub {
 					_, _ = g.WriteString(j.Work + linebreak)
 				}
+				d++
 			}
 		} else {
 			done <- true
@@ -75,7 +82,6 @@ func worker(jobs <-chan *Job, results chan<- *Job) {
 			h32 := N.New32()
 			h32.WriteString(strings.TrimSpace(j.Work))
 			y := h32.Sum32()
-
 			v, d := sm.Load(y)
 			if v == true {
 				j.Duplicate = true
@@ -95,10 +101,18 @@ func worker(jobs <-chan *Job, results chan<- *Job) {
 	}
 }
 
+func Round(x float64) float64 {
+	t := math.Trunc(x)
+	if math.Abs(x-t) >= 0.5 {
+		return t + math.Copysign(1, x)
+	}
+	return t
+}
+
 func main() {
 	threads := flag.Int("t", runtime.NumCPU(), "Number of Goroutines")
-	inpath := flag.String("i", "in.txt", "Path of input.txt")
-	outpath := flag.String("o", "out.txt", "Path of out.txt")
+	inpath := flag.String("i", "1.txt", "Path of input.txt")
+	outpath := flag.String("o", "1out.txt", "Path of out.txt")
 	savedub := flag.Bool("d", true, "Write duplicates to disk")
 	flag.Parse()
 
@@ -113,7 +127,11 @@ func main() {
 	wg.Add(1)
 	go producer(jobs, *inpath)
 	go writer(results, done, *outpath, *savedub)
+	start := time.Now()
 	wg.Wait()
 	close(results)
 	<-done
+	elapsed := time.Since(start)
+	log.Println("Unique lines:", u, "Duplicate lines:", d, "Total lines:", u+d)
+	log.Printf("Done. Time elapsed: %s", elapsed)
 }
